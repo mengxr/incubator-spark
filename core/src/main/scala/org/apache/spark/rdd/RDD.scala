@@ -713,20 +713,25 @@ abstract class RDD[T: ClassTag](
     jobResult
   }
 
+  private var previousCount = -1L
+
   /**
    * Return the number of elements in the RDD.
    */
   def count(): Long = {
-    sc.runJob(this, (iter: Iterator[T]) => {
-      // Use a while loop to count the number of elements rather than iter.size because
-      // iter.size uses a for loop, which is slightly slower in current version of Scala.
-      var result = 0L
-      while (iter.hasNext) {
-        result += 1L
-        iter.next()
-      }
-      result
-    }).sum
+    if(previousCount < 0L) {
+      previousCount = sc.runJob(this, (iter: Iterator[T]) => {
+        // Use a while loop to count the number of elements rather than iter.size because
+        // iter.size uses a for loop, which is slightly slower in current version of Scala.
+        var result = 0L
+        while (iter.hasNext) {
+          result += 1L
+          iter.next()
+        }
+        result
+      }).sum
+    }
+    previousCount
   }
 
   /**
